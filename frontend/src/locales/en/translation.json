@@ -1,0 +1,54 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "auth": {
+    "signIn": "Sign in to your account",
+    "signUp": "Create a new account",
+    "email": "Email address",
+    "emailRequired": "Email is required",
+    "invalidEmail": "Invalid email address",
+    "password": "Password",
+    "passwordRequired": "Password is required",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "needAccount": "Need an account? Sign up",
+    "alreadyHaveAccount": "Already have an account? Sign in",
+    "checkEmail": "Check your email for the confirmation link",
+    "unknownError": "Something went wrong"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "yourOrg": "Your Organization",
+    "channels": "Channels",
+    "users": "Users",
+    "createChannel": "Create new channel",
+    "inviteUser": "Invite user",
+    "noChannels": "No channels found",
+    "noUsers": "No users found"
+  },
+  "org": {
+    "name": "Organization Name",
+    "role": "Role",
+    "admin": "Admin",
+    "user": "User",
+    "client": "Client",
+    "godUser": "God User",
+    "createOrg": "Create Organization",
+    "manageOrg": "Manage Organization",
+    "inviteUsers": "Invite Users"
+  },
+  "channels": {
+    "name": "Channel Name",
+    "private": "Private Channel",
+    "public": "Public Channel",
+    "createNew": "Create New Channel",
+    "members": "Channel Members",
+    "addMember": "Add Member"
+  }
+} 
