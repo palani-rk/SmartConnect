@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/supabase-js": "^2.50.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -50,5 +50,9 @@
     "@types/react-i18next": "^8.1.0",
     "@types/react-router-dom": "^5.3.3",
     "i18next-browser-languagedetector": "^8.1.0"
-  }
+  },
+  "description": "A React-based multi-tenant collaboration platform that integrates with WhatsApp and Instagram, built on Supabase for backend services.",
+  "main": "postcss.config.js",
+  "author": "",
+  "license": "ISC"
 }
