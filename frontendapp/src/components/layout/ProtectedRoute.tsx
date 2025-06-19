@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import type { UserRole } from '@/types/auth'
+import { Box, CircularProgress, Typography } from '@mui/material'
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -19,9 +20,14 @@ export const ProtectedRoute = ({
   // Show loading spinner while checking auth
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+      >
+        <CircularProgress />
+      </Box>
     )
   }
 
@@ -33,12 +39,21 @@ export const ProtectedRoute = ({
   // Check role-based access if roles are specified
   if (requiredRoles.length > 0 && !canAccess(requiredRoles)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
-        </div>
-      </div>
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+      >
+        <Box textAlign="center">
+          <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'grey.900', mb: 2 }}>
+            Access Denied
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            You don't have permission to access this page.
+          </Typography>
+        </Box>
+      </Box>
     )
   }
 

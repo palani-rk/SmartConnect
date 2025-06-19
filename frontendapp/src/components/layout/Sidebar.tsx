@@ -1,6 +1,17 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { USER_ROLES } from '@/constants'
+import type { UserRole } from '@/types/auth'
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Box,
+  Typography,
+  Divider,
+} from '@mui/material'
 
 interface NavItem {
   path: string
@@ -40,41 +51,83 @@ export const Sidebar = () => {
 
   const visibleNavItems = navItems.filter(item => {
     if (!item.roles) return true // No role restriction
-    return canAccess(item.roles as any)
+    return canAccess(item.roles as UserRole[])
   })
 
   return (
-    <aside className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
-      <nav className="p-4">
-        <ul className="space-y-2">
+    <Drawer
+      variant="permanent"
+      sx={{
+        width: 256,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: 256,
+          boxSizing: 'border-box',
+          position: 'relative',
+          backgroundColor: 'white',
+          boxShadow: 1,
+          borderRight: 1,
+          borderColor: 'grey.200',
+        },
+      }}
+    >
+      <Box sx={{ p: 2 }}>
+        <List sx={{ gap: 1 }}>
           {visibleNavItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
+            <ListItem key={item.path} disablePadding>
+              <ListItemButton
+                component={NavLink}
                 to={item.path}
-                className={({ isActive }) =>
-                  `block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`
-                }
+                sx={() => ({
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1,
+                  fontSize: '0.875rem',
+                  fontWeight: 'medium',
+                  '&.active': {
+                    backgroundColor: 'primary.100',
+                    color: 'primary.700',
+                  },
+                  '&:not(.active)': {
+                    color: 'grey.700',
+                    '&:hover': {
+                      backgroundColor: 'grey.100',
+                    },
+                  },
+                })}
               >
-                {item.label}
-              </NavLink>
-            </li>
+                <ListItemText 
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontSize: '0.875rem',
+                    fontWeight: 'medium',
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
           ))}
-        </ul>
+        </List>
 
         {/* Role indicator */}
         {userRole && (
-          <div className="mt-8 pt-4 border-t border-gray-200">
-            <div className="text-xs text-gray-500">Role</div>
-            <div className="text-sm font-medium text-gray-700 capitalize">
+          <Box sx={{ mt: 4, pt: 2 }}>
+            <Divider sx={{ mb: 2 }} />
+            <Typography variant="caption" color="text.secondary">
+              Role
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 'medium', 
+                color: 'grey.700',
+                textTransform: 'capitalize'
+              }}
+            >
               {userRole}
-            </div>
-          </div>
+            </Typography>
+          </Box>
         )}
-      </nav>
-    </aside>
+      </Box>
+    </Drawer>
   )
 }

@@ -1,7 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { env } from '@/utils/env'
+import {
+  Container,
+  Paper,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+} from '@mui/material'
 
 const LoginPage = () => {
   const [email, setEmail] = useState('')
@@ -16,7 +26,7 @@ const LoginPage = () => {
   }
   const navigate = useNavigate()
   const auth = useAuth()
-  const { signIn, isLoading, isAuthenticated } = auth
+  const { signIn, isLoading } = auth
 
   // Clear error when user starts typing again (only clear when input actually changes)
   const clearErrorOnInput = () => {
@@ -53,81 +63,80 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+    <Container component="main" maxWidth="sm">
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Paper elevation={3} sx={{ padding: 4, width: '100%', maxWidth: 400 }}>
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">
+          <Box textAlign="center" mb={4}>
+            <Typography variant="h4" component="h1" gutterBottom>
               Welcome to {env.APP_NAME}
-            </h1>
-            <p className="text-gray-600 mt-2">Sign in to your account</p>
-          </div>
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Sign in to your account
+            </Typography>
+          </Box>
 
           {/* Error Message */}
-          {console.log('LoginPage: Rendering, error state:', error)}
           {error && (
-            <div style={{backgroundColor: '#FEE2E2', border: '1px solid #F87171', color: '#DC2626', padding: '16px', marginBottom: '24px', borderRadius: '8px'}}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <span>⚠️</span>
-                <span style={{fontWeight: '600'}}>{error}</span>
-              </div>
-            </div>
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
           )}
-          
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  clearErrorOnInput()
-                }}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                placeholder="Enter your email"
-              />
-            </div>
+          <Box component="form" onSubmit={handleSubmit}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                clearErrorOnInput()
+              }}
+              autoComplete="email"
+              autoFocus
+            />
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  clearErrorOnInput()
-                }}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                placeholder="Enter your password"
-              />
-            </div>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="password"
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                clearErrorOnInput()
+              }}
+              autoComplete="current-password"
+            />
 
-            <button
+            <Button
               type="submit"
+              fullWidth
+              variant="contained"
               disabled={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+              sx={{ mt: 3, mb: 2, py: 1.5 }}
+              startIcon={isLoading ? <CircularProgress size={20} /> : null}
             >
-              {isLoading && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              )}
-              <span>{isLoading ? 'Signing in...' : 'Sign In'}</span>
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </Box>
+        </Paper>
+      </Box>
+    </Container>
   )
 }
 

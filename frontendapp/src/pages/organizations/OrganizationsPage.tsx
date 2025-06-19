@@ -1,11 +1,17 @@
+import { Box, Typography, Paper } from '@mui/material'
+
 const OrganizationsPage = () => {
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Organizations</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Organization management (God users only)</p>
-      </div>
-    </div>
+    <Box>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'grey.900', mb: 3 }}>
+        Organizations
+      </Typography>
+      <Paper elevation={1} sx={{ p: 3 }}>
+        <Typography variant="body1" color="text.secondary">
+          Organization management (God users only)
+        </Typography>
+      </Paper>
+    </Box>
   )
 }
 

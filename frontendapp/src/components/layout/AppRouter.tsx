@@ -3,6 +3,7 @@ import { ProtectedRoute } from './ProtectedRoute'
 import { PublicRoute } from './PublicRoute'
 import { Layout } from './Layout'
 import { USER_ROLES } from '@/constants'
+import { Box, CircularProgress } from '@mui/material'
 
 // Lazy load page components for better performance
 import { lazy, Suspense } from 'react'
@@ -33,9 +34,14 @@ const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'))
 
 // Loading component
 const PageLoading = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-  </div>
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    minHeight="100vh"
+  >
+    <CircularProgress />
+  </Box>
 )
 
 export const AppRouter = () => {
