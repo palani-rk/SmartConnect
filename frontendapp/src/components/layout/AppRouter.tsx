@@ -16,6 +16,7 @@ const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'))
 
 // Organization pages
 const OrganizationsPage = lazy(() => import('@/pages/organizations/OrganizationsPage'))
+const OrganizationDetailPage = lazy(() => import('@/pages/organizations/OrganizationDetailPage'))
 
 // User pages
 const UsersPage = lazy(() => import('@/pages/users/UsersPage'))
@@ -70,6 +71,11 @@ export const AppRouter = () => {
             <Route path="organizations" element={
               <ProtectedRoute requiredRoles={[USER_ROLES.GOD]}>
                 <OrganizationsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="organizations/:id" element={
+              <ProtectedRoute requiredRoles={[USER_ROLES.GOD, USER_ROLES.ADMIN]}>
+                <OrganizationDetailPage />
               </ProtectedRoute>
             } />
 
