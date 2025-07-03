@@ -11,8 +11,8 @@ export interface UserWithOrganization extends User {
   organization?: Tables<'organizations'>
 }
 
-// Zod validation schemas
-export const userCreateSchema = z.object({
+// Base schema without refinements
+const userBaseSchema = z.object({
   email: z.string()
     .min(1, 'Email is required')
     .email('Invalid email format')
@@ -21,6 +21,10 @@ export const userCreateSchema = z.object({
     required_error: 'Role is required',
     invalid_type_error: 'Invalid role selected'
   }),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .optional(),
+  auto_generate_password: z.boolean().default(true),
   whatsapp_id: z.string()
     .max(50, 'WhatsApp ID must be less than 50 characters')
     .optional()
@@ -28,10 +32,24 @@ export const userCreateSchema = z.object({
   instagram_id: z.string()
     .max(50, 'Instagram ID must be less than 50 characters')
     .optional()
-    .or(z.literal(''))
+    .or(z.literal('')),
+  send_welcome_email: z.boolean().default(true)
 })
 
-export const userUpdateSchema = userCreateSchema.partial()
+// Create schema with validation refinements
+export const userCreateSchema = userBaseSchema.refine(data => {
+  // If not auto-generating password, password is required
+  if (!data.auto_generate_password) {
+    return data.password && data.password.length >= 8
+  }
+  return true
+}, {
+  message: "Password must be at least 8 characters when not auto-generating",
+  path: ["password"]
+})
+
+// Update schema is partial of the base schema (without refinements for flexibility)
+export const userUpdateSchema = userBaseSchema.partial()
 
 // Form types
 export type UserCreateForm = z.infer<typeof userCreateSchema>

@@ -3,7 +3,7 @@
 -- Description: Creates channels and channel_memberships tables with proper RLS policies
 
 -- Create channels table
-CREATE TABLE channels (
+CREATE TABLE IF NOT EXISTS channels (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE channels (
 );
 
 -- Create channel memberships table
-CREATE TABLE channel_memberships (
+CREATE TABLE IF NOT EXISTS channel_memberships (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -28,14 +28,15 @@ CREATE TABLE channel_memberships (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_channels_organization_id ON channels(organization_id);
-CREATE INDEX idx_channels_created_by ON channels(created_by);
-CREATE INDEX idx_channels_name ON channels(name);
-CREATE INDEX idx_channels_type ON channels(type);
-CREATE INDEX idx_channel_memberships_channel_id ON channel_memberships(channel_id);
-CREATE INDEX idx_channel_memberships_user_id ON channel_memberships(user_id);
+CREATE INDEX IF NOT EXISTS idx_channels_organization_id ON channels(organization_id);
+CREATE INDEX IF NOT EXISTS idx_channels_created_by ON channels(created_by);
+CREATE INDEX IF NOT EXISTS idx_channels_name ON channels(name);
+CREATE INDEX IF NOT EXISTS idx_channels_type ON channels(type);
+CREATE INDEX IF NOT EXISTS idx_channel_memberships_channel_id ON channel_memberships(channel_id);
+CREATE INDEX IF NOT EXISTS idx_channel_memberships_user_id ON channel_memberships(user_id);
 
 -- Create trigger to update updated_at column for channels
+DROP TRIGGER IF EXISTS update_channels_updated_at ON channels;
 CREATE TRIGGER update_channels_updated_at
     BEFORE UPDATE ON channels
     FOR EACH ROW
@@ -47,6 +48,7 @@ ALTER TABLE channel_memberships ENABLE ROW LEVEL SECURITY;
 
 -- Channel RLS policies
 -- Users can view channels in their organization (if they have access)
+DROP POLICY IF EXISTS "users_view_accessible_channels" ON channels;
 CREATE POLICY "users_view_accessible_channels" ON channels
     FOR SELECT 
     TO authenticated 
@@ -74,6 +76,7 @@ CREATE POLICY "users_view_accessible_channels" ON channels
     );
 
 -- Only admins and god users can create channels
+DROP POLICY IF EXISTS "admins_create_channels" ON channels;
 CREATE POLICY "admins_create_channels" ON channels
     FOR INSERT 
     TO authenticated 
@@ -84,6 +87,7 @@ CREATE POLICY "admins_create_channels" ON channels
     );
 
 -- Only admins and god users can update channels (in their org)
+DROP POLICY IF EXISTS "admins_update_channels" ON channels;
 CREATE POLICY "admins_update_channels" ON channels
     FOR UPDATE 
     TO authenticated 
@@ -98,6 +102,7 @@ CREATE POLICY "admins_update_channels" ON channels
     );
 
 -- Only admins and god users can delete channels (soft delete via updated_at)
+DROP POLICY IF EXISTS "admins_delete_channels" ON channels;
 CREATE POLICY "admins_delete_channels" ON channels
     FOR DELETE 
     TO authenticated 
@@ -108,6 +113,7 @@ CREATE POLICY "admins_delete_channels" ON channels
 
 -- Channel membership RLS policies
 -- Users can view memberships for channels they have access to
+DROP POLICY IF EXISTS "users_view_channel_memberships" ON channel_memberships;
 CREATE POLICY "users_view_channel_memberships" ON channel_memberships
     FOR SELECT 
     TO authenticated 
@@ -138,6 +144,7 @@ CREATE POLICY "users_view_channel_memberships" ON channel_memberships
     );
 
 -- Only admins and god users can manage channel memberships
+DROP POLICY IF EXISTS "admins_manage_channel_memberships" ON channel_memberships;
 CREATE POLICY "admins_manage_channel_memberships" ON channel_memberships
     FOR ALL 
     TO authenticated 

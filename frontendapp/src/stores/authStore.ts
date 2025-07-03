@@ -4,6 +4,17 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/services/supabase'
 import type { User, UserRole } from '@/types/auth'
 
+// Helper function to check if error is related to expired session
+const isSessionExpiredError = (error: any): boolean => {
+  if (!error?.message) return false
+  const message = error.message.toLowerCase()
+  return message.includes('session_not_found') ||
+         message.includes('expired') ||
+         message.includes('jwt') ||
+         message.includes('invalid_session') ||
+         message.includes('token_expired')
+}
+
 interface AuthState {
   // State
   user: User | null
@@ -16,6 +27,7 @@ interface AuthState {
   initialize: () => Promise<void>
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
+  clearExpiredSession: () => void
   setUser: (user: User | null) => void
   setSession: (session: Session | null) => void
   
@@ -48,7 +60,20 @@ export const useAuthStore = create<AuthState>()(
           
           if (sessionError) {
             console.error('Error getting session:', sessionError)
-            set({ isLoading: false })
+            
+            // If session is expired or not found, clear the auth state
+            if (isSessionExpiredError(sessionError)) {
+              console.warn('Session expired during initialization, clearing state')
+              set({ 
+                user: null, 
+                session: null, 
+                isAuthenticated: false, 
+                isLoading: false,
+                initialized: true
+              })
+            } else {
+              set({ isLoading: false, initialized: true })
+            }
             return
           }
 
@@ -62,7 +87,20 @@ export const useAuthStore = create<AuthState>()(
 
             if (profileError) {
               console.error('Error fetching user profile:', profileError)
-              set({ session, isLoading: false })
+              // If it's a role constraint error, sign out the user
+              if (profileError.code === '22023' && profileError.message?.includes('role')) {
+                console.warn('Invalid user role detected, signing out user')
+                await supabase.auth.signOut()
+                set({ 
+                  user: null, 
+                  session: null, 
+                  isAuthenticated: false, 
+                  isLoading: false,
+                  initialized: true
+                })
+                return
+              }
+              set({ session, isLoading: false, initialized: true })
               return
             }
 
@@ -85,14 +123,23 @@ export const useAuthStore = create<AuthState>()(
 
           // Listen for auth changes
           supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth state change:', event, session?.user?.id)
             
             if (event === 'SIGNED_IN' && session?.user) {
               // Fetch user profile
-              const { data: userProfile } = await supabase
+              const { data: userProfile, error: profileError } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', session.user.id)
                 .single()
+
+              if (profileError) {
+                console.error('Error in auth state change:', profileError)
+                if (profileError.code === '22023' && profileError.message?.includes('role')) {
+                  await supabase.auth.signOut()
+                  return
+                }
+              }
 
               set({ 
                 user: userProfile, 
@@ -100,7 +147,8 @@ export const useAuthStore = create<AuthState>()(
                 isAuthenticated: true,
                 isLoading: false
               })
-            } else if (event === 'SIGNED_OUT') {
+            } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+              // Handle sign out or expired token
               set({ 
                 user: null, 
                 session: null, 
@@ -151,12 +199,48 @@ export const useAuthStore = create<AuthState>()(
       signOut: async () => {
         try {
           set({ isLoading: true })
-          await supabase.auth.signOut()
+          
+          // Attempt to sign out from Supabase
+          const { error } = await supabase.auth.signOut()
+          
+          if (error) {
+            // If session is expired or not found, just clear local state
+            if (isSessionExpiredError(error)) {
+              console.warn('Session expired during sign out, clearing local state:', error.message)
+              set({ 
+                user: null, 
+                session: null, 
+                isAuthenticated: false, 
+                isLoading: false 
+              })
+              return
+            }
+            throw error
+          }
+          
           // State will be cleared in the auth state change listener
         } catch (error) {
           console.error('Sign out error:', error)
-          set({ isLoading: false })
+          
+          // Even if sign out fails, clear local state to prevent stuck loading
+          set({ 
+            user: null, 
+            session: null, 
+            isAuthenticated: false, 
+            isLoading: false 
+          })
         }
+      },
+
+      // Clear expired session without calling Supabase
+      clearExpiredSession: () => {
+        console.warn('Clearing expired session')
+        set({ 
+          user: null, 
+          session: null, 
+          isAuthenticated: false, 
+          isLoading: false 
+        })
       },
 
       // Set user

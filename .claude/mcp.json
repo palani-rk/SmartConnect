@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "./browsers",
+        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "false"
+      }
+    }
+  }
+}

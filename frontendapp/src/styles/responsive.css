@@ -1,0 +1,48 @@
+/* Mobile-first responsive utilities */
+
+/* Hide scrollbars on mobile for cleaner look */
+@media (max-width: 768px) {
+  /* Webkit browsers */
+  ::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+  }
+  
+  /* Firefox */
+  * {
+    scrollbar-width: none;
+  }
+}
+
+/* Improve touch targets on mobile */
+@media (max-width: 768px) {
+  /* Ensure minimum touch target size */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better spacing for mobile forms */
+  .MuiTextField-root {
+    margin-bottom: 16px !important;
+  }
+  
+  /* Responsive tables */
+  .MuiTable-root {
+    min-width: auto !important;
+  }
+  
+  /* Better modal positioning on mobile */
+  .MuiDialog-paper {
+    margin: 16px !important;
+    max-height: calc(100vh - 32px) !important;
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .MuiDialog-paper {
+    max-height: calc(100vh - 16px) !important;
+    margin: 8px !important;
+  }
+}

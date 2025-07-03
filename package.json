@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "retina-ui-test-mcp": "file:../RetinaAI/retina-ui-test-mcp"
+  }
+}

@@ -1,6 +1,7 @@
 import { AppRouter } from '@/components/layout'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
+import './styles/responsive.css'
 
 // Create MUI theme that matches the Tailwind primary colors
 const theme = createTheme({

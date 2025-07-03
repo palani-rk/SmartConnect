@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     
     // Only run simple tests
-    include: ['supabase/integration_tests/connection.test.ts', 'supabase/integration_tests/migration.test.ts', 'supabase/integration_tests/edge-functions.test.ts'],
+    include: ['supabase/integration_tests/connection.test.ts', 'supabase/integration_tests/migration.test.ts', 'supabase/integration_tests/create-missing-table.test.ts'],
     exclude: [
       'node_modules/**/*',
       'supabase/functions/**/*',

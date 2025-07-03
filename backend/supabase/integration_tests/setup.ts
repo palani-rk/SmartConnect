@@ -11,11 +11,23 @@ export const testDataTracker = {
   membershipIds: [] as string[]
 }
 
+// Cache for current authenticated user to avoid rate limiting
+let currentAuthenticatedUser: { userType: string; user: any } | null = null
+
 // Authentication helpers for backend integration tests
 export const authenticateTestUser = async (userType: 'admin' | 'user' | 'client' = 'admin') => {
   try {
+    // Check if we already have the right user authenticated
+    if (currentAuthenticatedUser?.userType === userType) {
+      console.log(`🔄 Using cached authentication for: ${userType}`)
+      return currentAuthenticatedUser.user
+    }
+
     const userConfig = BACKEND_TEST_CONFIG.users[userType]
     console.log(`🔐 Authenticating backend test user: ${userConfig.email}`)
+    
+    // Add a small delay to prevent rate limiting
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     const { data, error } = await supabase.auth.signInWithPassword({
       email: userConfig.email,
@@ -34,6 +46,9 @@ export const authenticateTestUser = async (userType: 'admin' | 'user' | 'client'
     console.log(`   Role: ${data.user.user_metadata?.role}`)
     console.log(`   Org: ${data.user.user_metadata?.organization_id}`)
     
+    // Cache the authenticated user
+    currentAuthenticatedUser = { userType, user: data.user }
+    
     return data.user
   } catch (error) {
     console.error('❌ Backend test user authentication failed:', error)
@@ -50,6 +65,8 @@ export const signOutTestUser = async () => {
     } else {
       console.log('🔓 Backend test user signed out')
     }
+    // Clear the cached user
+    currentAuthenticatedUser = null
   } catch (error) {
     console.error('❌ Error during backend sign out:', error)
   }
@@ -71,6 +88,7 @@ export const cleanupTestData = async () => {
   try {
     // Clean up channel memberships first (due to foreign key constraints)
     if (testDataTracker.membershipIds.length > 0) {
+      console.log(`🧹 Cleaning up ${testDataTracker.membershipIds.length} channel memberships...`)
       const { error: membershipError } = await supabase
         .from('channel_memberships')
         .delete()
@@ -78,6 +96,7 @@ export const cleanupTestData = async () => {
 
       if (membershipError) {
         console.error('❌ Failed to cleanup channel memberships:', membershipError)
+        // Don't throw error, continue with channel cleanup
       } else {
         console.log(`✅ Cleaned up ${testDataTracker.membershipIds.length} channel memberships`)
       }
@@ -85,6 +104,7 @@ export const cleanupTestData = async () => {
 
     // Clean up channels
     if (testDataTracker.channelIds.length > 0) {
+      console.log(`🧹 Cleaning up ${testDataTracker.channelIds.length} channels...`)
       const { error: channelError } = await supabase
         .from('channels')
         .delete()
@@ -92,9 +112,35 @@ export const cleanupTestData = async () => {
 
       if (channelError) {
         console.error('❌ Failed to cleanup channels:', channelError)
+        // Don't throw error, continue with cleanup
       } else {
         console.log(`✅ Cleaned up ${testDataTracker.channelIds.length} channels`)
       }
+    }
+
+    // Additional cleanup: Remove any orphaned test data based on naming convention
+    try {
+      const { data: orphanedChannels, error: orphanError } = await supabase
+        .from('channels')
+        .select('id')
+        .like('name', `%${BACKEND_TEST_CONFIG.prefixes.channel}%`)
+        .eq('organization_id', TEST_ORG_ID)
+
+      if (!orphanError && orphanedChannels && orphanedChannels.length > 0) {
+        console.log(`🧹 Found ${orphanedChannels.length} orphaned test channels, cleaning up...`)
+        const { error: orphanCleanupError } = await supabase
+          .from('channels')
+          .delete()
+          .in('id', orphanedChannels.map(c => c.id))
+        
+        if (orphanCleanupError) {
+          console.error('❌ Failed to cleanup orphaned channels:', orphanCleanupError)
+        } else {
+          console.log(`✅ Cleaned up ${orphanedChannels.length} orphaned test channels`)
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error during orphaned data cleanup:', error)
     }
 
     // Reset trackers
@@ -226,6 +272,8 @@ afterAll(async () => {
   console.log('🧹 Running final backend test cleanup...')
   
   try {
+    // Authenticate as admin to ensure we have permissions for cleanup
+    await authenticateTestUser('admin')
     await cleanupTestData()
     await signOutTestUser()
   } catch (error) {

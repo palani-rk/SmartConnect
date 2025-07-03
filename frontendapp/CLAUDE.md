@@ -1,376 +1,169 @@
-# SmartConnect Multi-Tenant Collaboration Platform - Frontend
+# Claude Code Agent Instructions - Multi-Tenant Collaboration Platform
 
 ## Project Overview
-A Slack-like multi-tenant collaboration platform built with React, TypeScript, and Supabase. Supports real-time messaging, user management, and integrations with WhatsApp and Instagram.
 
-## Tech Stack
-- **Framework**: Vite + React 18 + TypeScript
-- **State Management**: Zustand (with devtools middleware)
-- **Routing**: React Router v6
-- **UI Library**: Material-UI (MUI)
-- **Forms**: React Hook Form + Zod validation
-- **Backend**: Supabase (PostgreSQL, Auth, Real-time, Storage)
+You are building a multi-tenant collaboration platform similar to Slack using:
+- **Frontend**: Vite + React 18 + TypeScript + Material UI (MUI)
+- **Backend**: Supabase (Auth, Database, Realtime, Storage)
+- **State Management**: Zustand
+- **Forms**: React Hook Form + Zod
 - **Testing**: Vitest + React Testing Library + MSW
-- **Build**: TypeScript + Vite
 
-## Architecture Patterns
+## Key Architecture Principles
 
-### State Management (Zustand)
-```typescript
-// Pattern: create store with devtools, clear action naming
-export const useExampleStore = create<ExampleState>()(
-  devtools(
-    (set, get) => ({
-      // State
-      items: [],
-      isLoading: false,
-      error: null,
-      
-      // Sync actions
-      setError: (error) => set({ error }, false, 'setError'),
-      clearError: () => set({ error: null }, false, 'clearError'),
-      
-      // Async actions with proper error handling
-      fetchItems: async () => {
-        set({ isLoading: true, error: null }, false, 'fetchItems:start')
-        try {
-          const items = await ExampleService.getItems()
-          set({ items, isLoading: false }, false, 'fetchItems:success')
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch'
-          set({ error: errorMessage, isLoading: false }, false, 'fetchItems:error')
-          throw error
-        }
-      }
-    }),
-    { name: 'example-store' }
-  )
-)
+### 1. Type Safety First
+- Use TypeScript strictly with generated Supabase types
+- Define all component props, store interfaces, and API responses
+- Avoid `any` types - use proper type inference
+
+### 2. Component Organization
+```
+components/
+├── ui/           # Reusable atoms (Button, Input, Modal)
+├── layout/       # App structure (Header, Sidebar, Layout)
+├── features/     # Feature-specific components
+│   ├── messaging/
+│   ├── channels/
+│   └── users/
+└── shared/       # Cross-feature components
 ```
 
-### Service Layer Pattern
-```typescript
-// Pattern: Static class methods, consistent error handling
-export class ExampleService {
-  static async getItems(params = {}): Promise<ItemsResponse> {
-    try {
-      const { data, error, count } = await supabase
-        .from('table')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      return { items: data || [], total: count || 0 }
-    } catch (error) {
-      console.error('Error fetching items:', error)
-      throw error
-    }
-  }
-}
+### 3. State Management Pattern
+- Zustand stores for global state (auth, org, channels)
+- React Query for server state (optional enhancement)
+- Local component state for UI-only concerns
+- Optimistic updates for real-time features
+
+### 4. Testing Strategy - Hybrid Approach
+- **Unit Tests**: Mock Supabase for fast, isolated component tests
+- **Integration Tests**: Use local Supabase instance for critical flows
+- **E2E Tests**: Test against local Supabase for full user journeys
+- Test user behavior, not implementation details
+- Use MSW for external API mocking (WhatsApp/Instagram)
+
+## User Roles & Permissions
+
+1. **God User**: Platform admin - manages organizations
+2. **Org Admin**: Organization owner - manages users/channels
+3. **Org User**: Regular user - messaging and collaboration
+4. **Org Client**: External user via WhatsApp/Instagram
+
+## Implementation Process
+
+### For Each Feature:
+
+#### 1. Specification Phase
+```markdown
+## Feature: [Feature Name]
+
+### Requirements
+- User stories involved
+- UI/UX requirements
+- Data models affected
+- Real-time considerations
+
+### Acceptance Criteria
+- [ ] Specific testable criteria
 ```
 
-### Form Pattern (React Hook Form + Zod)
-```typescript
-// 1. Define Zod schema in types file
-export const itemSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email')
-})
+#### 2. Pseudocode Phase
+```markdown
+## Pseudocode: [Feature Name]
 
-// 2. Component with form
-const { control, handleSubmit, formState: { errors } } = useForm({
-  resolver: zodResolver(schema),
-  defaultValues: { name: '', email: '' }
-})
+### Files Structure
+- components/features/[feature]/
+- stores/[feature]Store.ts
+- hooks/use[Feature].ts
+- utils/[feature]Utils.ts
 
-// 3. Controller for each field
-<Controller
-  name="fieldName"
-  control={control}
-  render={({ field }) => (
-    <TextField
-      {...field}
-      error={Boolean(errors.fieldName)}
-      helperText={errors.fieldName?.message}
-    />
-  )}
-/>
+### Data Flow
+1. User action triggers
+2. Store updates
+3. API calls
+4. UI updates
+5. Real-time sync
+
+### Key Functions
+- function1(): Description
+- function2(): Description
 ```
 
-## Database Schema (Supabase)
+#### 3. Implementation Phase
+- **Check existing patterns**: Analyze the codebase for established patterns before implementing
+- Start with types/interfaces
+- Build UI components with MUI following existing component patterns
+- Implement store logic consistent with other stores
+- Add Supabase integration
+- Write tests
+- Handle edge cases
 
-### Core Tables
-```sql
--- Organizations (tenant isolation)
-organizations {
-  id: uuid (pk)
-  name: string
-  created_at: timestamp
-}
+## Security Considerations
 
--- Users (role-based access)
-users {
-  id: uuid (pk, references auth.users)
-  email: string
-  organization_id: uuid (fk -> organizations.id)
-  role: enum('god', 'admin', 'user', 'client')
-  whatsapp_id: string (optional)
-  instagram_id: string (optional)
-  created_at: timestamp
-}
+1. **Row Level Security (RLS)**: Rely on Supabase RLS for data isolation
+2. **Input Validation**: Use Zod schemas for all user inputs
+3. **XSS Prevention**: React handles this, but sanitize markdown/HTML
+4. **File Uploads**: Validate types and sizes before upload
 
--- Channels (organization-scoped)
-channels {
-  id: uuid (pk)
-  organization_id: uuid (fk -> organizations.id)
-  name: string
-  type: string
-  is_private: boolean
-  created_at: timestamp
-}
+## Performance Guidelines
 
--- Messages (channel-scoped)
-messages {
-  id: uuid (pk)
-  channel_id: uuid (fk -> channels.id)
-  user_id: uuid (fk -> users.id)
-  content: string
-  type: string
-  created_at: timestamp
-}
+1. **Lazy Loading**: Use React.lazy for route-based splitting
+2. **Memoization**: Use React.memo and useMemo appropriately
+3. **Virtual Scrolling**: Use react-window for message lists with many items
+4. **Optimistic Updates**: Update UI before server confirmation
+5. **Debouncing**: For search and real-time typing indicators
+6. **MUI Performance**: Use `sx` prop sparingly, prefer styled components
 
--- Channel Members (many-to-many)
-channel_members {
-  channel_id: uuid (fk -> channels.id)
-  user_id: uuid (fk -> users.id)
-}
-```
 
-## Role-Based Access Control
+## Feature Priority Order
 
-### User Roles Hierarchy
-```typescript
-export const USER_ROLES = {
-  GOD: 'god',     // Platform admin - all organizations
-  ADMIN: 'admin', // Organization admin - own org only
-  USER: 'user',   // Regular user - assigned channels
-  CLIENT: 'client' // External user - limited access
-} as const
-```
+1. **Authentication Flow**: Login, registration, role detection
+2. **Organization Context**: Org selection, switching
+3. **Channel Management**: List, create, join channels
+4. **Messaging Core**: Send/receive messages, real-time sync
+5. **User Management**: Admin features for user CRUD
+6. **WhatsApp/Instagram**: Integration for client users
+7. **Multi-modal Messages**: Audio, image support
+8. **Advanced Features**: Search, notifications, presence
 
-### Permission Patterns
-```typescript
-// Use authStore for permission checks
-const { user, canAccess } = useAuthStore()
+## Common Pitfalls to Avoid
 
-// Route-level protection
-<ProtectedRoute requiredRoles={[USER_ROLES.GOD, USER_ROLES.ADMIN]}>
-  <ComponentName />
-</ProtectedRoute>
+1. **Don't bypass RLS**: Always use authenticated Supabase client
+2. **Don't store sensitive data**: Keep tokens secure
+3. **Don't over-optimize**: Profile first, optimize later
+4. **Don't ignore errors**: Handle all error states gracefully
+5. **Don't skip tests**: Test as you build
 
-// Component-level checks
-const canManageUsers = canAccess(['god', 'admin'])
-const canEditUser = (targetUser) => {
-  if (user.role === 'god') return true
-  if (user.role === 'admin') return targetUser.role !== 'god'
-  return false
-}
-```
-
-## File Structure Convention
-
-```
-src/
-├── components/           # Reusable UI components
-│   ├── ui/              # Base components (Button, Modal, etc.)
-│   ├── layout/          # Layout components (Header, Sidebar)
-│   ├── organizations/   # Feature-specific components
-│   ├── users/          # Feature-specific components
-│   └── index.ts        # Export files for each directory
-├── pages/              # Route-level components
-│   ├── auth/          # Authentication pages
-│   ├── organizations/ # Organization management
-│   └── dashboard/     # Main dashboard
-├── hooks/             # Custom React hooks
-├── stores/            # Zustand stores (one per domain)
-├── services/          # API service classes
-├── types/             # TypeScript types + Zod schemas
-├── utils/             # Helper functions
-├── constants/         # App constants
-└── __tests__/         # Test files (mirror src structure)
-```
-
-## Component Patterns
-
-### Page Component Structure
-```typescript
-const ExamplePage = () => {
-  // 1. Hooks and auth
-  const { user } = useAuthStore()
-  const { items, fetchItems } = useExampleStore()
-  
-  // 2. Local UI state
-  const [selectedItem, setSelectedItem] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  
-  // 3. Permission checks
-  const canEdit = user?.role === 'admin'
-  
-  // 4. Event handlers
-  const handleCreate = () => setIsModalOpen(true)
-  
-  // 5. Effects
-  useEffect(() => {
-    fetchItems()
-  }, [])
-  
-  // 6. Render
-  return (
-    <Container>
-      {/* Content */}
-    </Container>
-  )
-}
-```
-
-### Modal Component Pattern
-```typescript
-interface ModalProps {
-  open: boolean
-  onClose: () => void
-  onSubmit: (data: FormData) => Promise<void>
-  item?: Item | null
-  isSubmitting?: boolean
-  error?: string | null
-}
-
-const Modal = ({ open, onClose, onSubmit, item, isSubmitting, error }) => {
-  const isEditing = Boolean(item)
-  
-  return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>
-        {isEditing ? 'Edit Item' : 'Create Item'}
-      </DialogTitle>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogContent>
-          {error && <Alert severity="error">{error}</Alert>}
-          {/* Form fields */}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
-  )
-}
-```
-
-## Testing Patterns
-
-### Component Testing
-```typescript
-// Use render helper with providers
-import { renderWithProviders } from '@/test/helpers/test-utils'
-
-describe('Component', () => {
-  it('should render correctly', () => {
-    renderWithProviders(<Component />)
-    expect(screen.getByText('Expected Text')).toBeInTheDocument()
-  })
-})
-```
-
-### Store Testing
-```typescript
-// Test store actions and state changes
-describe('useExampleStore', () => {
-  beforeEach(() => {
-    useExampleStore.setState({ items: [], isLoading: false, error: null })
-  })
-
-  it('should fetch items successfully', async () => {
-    const { fetchItems } = useExampleStore.getState()
-    await fetchItems()
-    
-    expect(useExampleStore.getState().items).toHaveLength(2)
-    expect(useExampleStore.getState().isLoading).toBe(false)
-  })
-})
-```
-
-## Development Commands
+## Helpful Commands
 
 ```bash
 # Development
-npm run dev              # Start dev server
-npm run build           # Production build
-npm run preview         # Preview build
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run test         # Run tests
+npm run test:watch   # Run tests in watch mode
 
-# Testing
-npm run test            # Run all tests
-npm run test:unit       # Unit tests only
-npm run test:integration # Integration tests only
-npm run test:coverage   # With coverage report
-npm run test:ui         # Vitest UI
-
-# Code Quality
-npm run lint            # ESLint check
+# Local Supabase for testing
+supabase start     # Start local instance
+supabase stop      # Stop local instance
+supabase status    # Check local services
 ```
 
-## Environment Variables
+## Questions to Ask Before Implementation
 
-```bash
-# .env.local
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+1. What are the exact user stories this addresses?
+2. How does this interact with real-time features?
+3. What are the error states and edge cases?
+4. How will this scale with many users/messages?
+5. What permissions/RLS rules are needed?
 
-## Key Implementation Notes
+## Remember
 
-### Routing Strategy
-- Use lazy loading for all page components
-- Implement nested routes with protected route wrappers
-- Role-based route protection at route level
+- Keep components small and focused
+- Write self-documenting code with clear names
+- Handle loading and error states
+- Make it accessible (MUI components have built-in accessibility)
+- Test the happy path and edge cases
+- Document complex business logic
+- Use MUI's responsive utilities (Grid, useMediaQuery)
 
-### State Management Philosophy
-- Global state: Data that needs to be shared across components (Zustand)
-- Local state: UI-specific state like modals, forms (useState)
-- Server state: API calls and caching handled by stores
-
-### Error Handling
-- Service layer: Log and re-throw errors
-- Store layer: Set error state, display to user
-- Component layer: Show error messages, retry mechanisms
-
-### Performance Considerations
-- Lazy load page components
-- Optimize table components for large datasets
-- Use optimistic updates for better UX
-- Implement proper loading states
-
-### Security
-- All data access scoped by organization_id
-- Row Level Security (RLS) enforced at database level
-- Role checks on both frontend and backend
-- No sensitive data in client-side state
-
-## Recent Implementations
-
-### User Management Feature (Latest)
-- Organization detail page with user management
-- Role-based user CRUD operations
-- Inline role editing with permission checks
-- Search and filter capabilities
-- Modal forms with validation
-
-### Components Added
-- `UserManagementTable` - Full-featured user table
-- `UserForm` - Modal form for user creation/editing
-- `OrganizationDetailPage` - Main detail page with user management
-- Enhanced routing with organization detail routes
-
-This documentation should be updated as new features are implemented to maintain consistency and help future development.
+This collaboration platform should feel fast, reliable, and intuitive. Focus on core functionality first, then enhance with advanced features. Leverage MUI's pre-built components for consistent, professional UI.

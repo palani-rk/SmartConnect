@@ -385,7 +385,8 @@
 
 3. Add analytics views:
    - User activity metrics
-   - Platform usage statistics
+   - Platform usage s
+   tatistics
    - Performance monitoring
 ```
 

@@ -9,6 +9,38 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Enhanced configuration
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        'src/__tests__/',
+      ],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+      },
+    },
+    // Concurrent testing for faster execution
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+      },
+    },
+    // Better error reporting
+    reporter: ['verbose'],
+    // Separate unit and integration tests
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // Longer timeout for integration tests
+    testTimeout: 10000,
   },
   resolve: {
     alias: {

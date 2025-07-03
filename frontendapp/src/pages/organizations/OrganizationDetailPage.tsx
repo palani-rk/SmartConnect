@@ -36,7 +36,7 @@ const OrganizationDetailPage = () => {
   const userRole = currentUser?.role
   
   // Stores
-  const { organizations } = useOrganizationStore()
+  const { organizations, fetchOrganization } = useOrganizationStore()
   const {
     fetchUsersByOrg,
     createUser,
@@ -76,18 +76,32 @@ const OrganizationDetailPage = () => {
       return
     }
 
-    // Find organization
-    const org = organizations.find(o => o.id === organizationId)
-    if (org) {
-      setOrganization(org)
+    // Load organization data
+    const loadOrganization = async () => {
+      try {
+        // First check if we already have it in the store
+        const existingOrg = organizations.find(o => o.id === organizationId)
+        if (existingOrg) {
+          setOrganization(existingOrg)
+        } else {
+          // Fetch the organization
+          const org = await fetchOrganization(organizationId)
+          setOrganization(org)
+        }
+      } catch (error) {
+        console.error('Failed to load organization:', error)
+        // Organization will remain null, triggering the "not found" message
+      }
     }
+
+    loadOrganization()
 
     // Fetch users and stats
     if (canManageUsers) {
       fetchUsersByOrg(organizationId)
       loadUserStats()
     }
-  }, [organizationId, canViewOrganization, canManageUsers, organizations, fetchUsersByOrg, navigate])
+  }, [organizationId, canViewOrganization, canManageUsers, organizations, fetchOrganization, fetchUsersByOrg, navigate])
 
   const loadUserStats = async () => {
     if (!organizationId) return
@@ -131,22 +145,25 @@ const OrganizationDetailPage = () => {
     setIsSubmitting(true)
     try {
       if (userFormMode === 'create') {
+        const createData = userData as UserCreateForm
         await createUser({
-          email: userData.email!,
+          email: createData.email!,
           organization_id: organizationId,
-          role: userData.role!,
-          whatsapp_id: userData.whatsapp_id || undefined,
-          instagram_id: userData.instagram_id || undefined,
-          auto_generate_password: true,
-          send_welcome_email: true
+          role: createData.role!,
+          password: createData.auto_generate_password ? undefined : createData.password,
+          auto_generate_password: createData.auto_generate_password,
+          whatsapp_id: createData.whatsapp_id || undefined,
+          instagram_id: createData.instagram_id || undefined,
+          send_welcome_email: createData.send_welcome_email || true
         } as CreateUserRequest)
         setSuccessMessage('User created successfully')
       } else if (selectedUser) {
+        const updateData = userData as UserUpdateForm
         await updateUser(selectedUser.id, {
-          email: userData.email,
-          role: userData.role,
-          whatsapp_id: userData.whatsapp_id || null,
-          instagram_id: userData.instagram_id || null
+          email: updateData.email,
+          role: updateData.role,
+          whatsapp_id: updateData.whatsapp_id || null,
+          instagram_id: updateData.instagram_id || null
         })
         setSuccessMessage('User updated successfully')
       }
