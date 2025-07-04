@@ -26,20 +26,20 @@ const getNavItems = (user: any): NavItem[] => [
   { path: '/dashboard', label: 'Dashboard' },
   { path: '/messages', label: 'Messages' },
   { 
-    path: '/channels', 
-    label: 'Channels',
-    roles: [USER_ROLES.GOD, USER_ROLES.ADMIN, USER_ROLES.USER]
-  },
-  { 
     path: (currentUser: any) => {
-      // Admin users go to their organization detail page to manage users
+      // Admin users go to their organization detail page to manage users and channels
       if (currentUser?.role === USER_ROLES.ADMIN && currentUser?.organization_id) {
         return `/organizations/${currentUser.organization_id}`
       }
       // God users go to the general users page
       return '/users'
     },
-    label: 'Users',
+    label: 'Management',
+    roles: [USER_ROLES.GOD, USER_ROLES.ADMIN]
+  },
+  { 
+    path: '/channels', 
+    label: 'Channels',
     roles: [USER_ROLES.GOD, USER_ROLES.ADMIN]
   },
   { 

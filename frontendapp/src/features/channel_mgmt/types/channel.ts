@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import type { Tables, TablesInsert, TablesUpdate, Database } from './supabase'
+import type { Tables, TablesInsert, TablesUpdate } from '@/types/supabase'
+import type { UserWithOrganization } from '@/types/user'
 
 // Database types
 export type Channel = Tables<'channels'>
@@ -10,41 +11,27 @@ export type ChannelMembership = Tables<'channel_memberships'>
 export type ChannelMembershipInsert = TablesInsert<'channel_memberships'>
 export type ChannelMembershipUpdate = TablesUpdate<'channel_memberships'>
 
-// View types
-export type ChannelWithMemberCount = Tables<'channels_with_member_count'>
-
-// Function return types
-export type ChannelMemberDetails = Database['public']['Functions']['get_channel_members']['Returns'][0]
-export type UserChannelDetails = Database['public']['Functions']['get_user_channels']['Returns'][0]
-export type AddUsersResult = Database['public']['Functions']['add_users_to_channel']['Returns'][0]
-
 // Extended types for UI
 export interface ChannelWithMembers extends Channel {
-  members: ChannelMemberDetails[]
+  members: UserWithOrganization[]
   member_count: number
 }
 
-export interface ChannelListItem extends Channel {
-  member_count?: number
+export interface ChannelWithDetails extends Channel {
+  members: ChannelMemberDetails[]
+  member_count: number
+  creator: UserWithOrganization
+  can_edit: boolean
+  can_delete: boolean
 }
 
-// Channel types enum
-export const CHANNEL_TYPES = {
-  PUBLIC: 'public',
-  PRIVATE: 'private'
-} as const
+export interface ChannelMemberDetails extends UserWithOrganization {
+  membership_role: 'admin' | 'member'
+  joined_at: string
+  can_remove: boolean
+}
 
-export type ChannelType = typeof CHANNEL_TYPES[keyof typeof CHANNEL_TYPES]
-
-// Channel member roles
-export const CHANNEL_MEMBER_ROLES = {
-  ADMIN: 'admin',
-  MEMBER: 'member'
-} as const
-
-export type ChannelMemberRole = typeof CHANNEL_MEMBER_ROLES[keyof typeof CHANNEL_MEMBER_ROLES]
-
-// Zod validation schemas
+// Form validation schemas
 export const channelCreateSchema = z.object({
   name: z.string()
     .min(1, 'Channel name is required')
@@ -72,20 +59,50 @@ export type ChannelCreateForm = z.infer<typeof channelCreateSchema>
 export type ChannelUpdateForm = z.infer<typeof channelUpdateSchema>
 export type ChannelMembershipForm = z.infer<typeof channelMembershipSchema>
 
-// Service types
-export interface CreateChannelRequest extends ChannelCreateForm {
-  organization_id: string
-  created_by: string
-}
-
+// API types
 export interface ChannelSearchParams {
+  organization_id: string
   search?: string
-  type?: string
+  type?: 'public' | 'private'
   limit?: number
   offset?: number
 }
 
 export interface ChannelsResponse {
-  channels: ChannelListItem[]
+  channels: ChannelWithDetails[]
   total: number
+  has_more: boolean
+}
+
+// Component prop types
+export interface ChannelManagementProps {
+  organizationId: string
+  currentUser: UserWithOrganization
+  onChannelSelect?: (channel: Channel) => void
+}
+
+export interface ChannelFormProps {
+  open: boolean
+  onClose: () => void
+  onSubmit: (data: ChannelCreateForm) => Promise<void>
+  channel?: Channel | null
+  isSubmitting?: boolean
+  error?: string | null
+}
+
+export interface MemberManagementDialogProps {
+  channel: ChannelWithDetails
+  availableUsers: UserWithOrganization[]
+  onMembersUpdate: (members: ChannelMemberDetails[]) => void
+  open: boolean
+  onClose: () => void
+}
+
+export interface ChannelListProps {
+  channels: ChannelWithDetails[]
+  onChannelEdit: (channel: Channel) => void
+  onChannelDelete: (channel: Channel) => void
+  onMemberManage: (channel: Channel) => void
+  loading?: boolean
+  error?: string | null
 }

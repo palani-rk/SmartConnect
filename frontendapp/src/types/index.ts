@@ -2,7 +2,7 @@
 export * from './supabase'
 export * from './auth'
 export * from './organization'
-export * from './channel'
+export * from '../features/channel_mgmt/types'
 export * from './message'
 export * from './common'
 

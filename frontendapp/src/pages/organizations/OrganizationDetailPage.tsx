@@ -11,21 +11,27 @@ import {
   Card,
   CardContent,
   Grid,
-  Chip
+  Chip,
+  Tabs,
+  Tab
 } from '@mui/material'
 import { 
   Home as HomeIcon, 
   Business as BusinessIcon,
-  People as PeopleIcon 
+  People as PeopleIcon,
+  Tag as ChannelIcon
 } from '@mui/icons-material'
 import { useOrganizationStore } from '@/stores/organizationStore'
 import { useUserStore } from '@/stores/userStore'
+import { useChannelStore } from '@/stores'
 import { useAuthStore } from '@/stores/authStore'
 import { UserManagementTable, UserForm } from '@/components/users'
+import { ChannelList, ChannelForm, MemberManagementDialog, DeleteChannelDialog } from '@/components'
 import type { Organization } from '@/types/organization'
 import type { User } from '@/types/user'
 import type { CreateUserRequest } from '@/services/userService'
 import type { UserCreateForm, UserUpdateForm } from '@/types/user'
+import type { ChannelWithDetails, ChannelCreateForm, ChannelUpdateForm } from '@/types/channel'
 
 const OrganizationDetailPage = () => {
   const { id: organizationId } = useParams<{ id: string }>()
@@ -33,7 +39,6 @@ const OrganizationDetailPage = () => {
   
   // Auth and permissions
   const { user: currentUser, canAccess } = useAuthStore()
-  const userRole = currentUser?.role
   
   // Stores
   const { organizations, fetchOrganization } = useOrganizationStore()
@@ -41,15 +46,23 @@ const OrganizationDetailPage = () => {
     fetchUsersByOrg,
     createUser,
     updateUser,
-    deleteUser,
-    getUsersByOrg,
     getUserStats,
-    isLoading: usersLoading,
     error: usersError,
     clearError: clearUsersError
   } = useUserStore()
+  const {
+    channels,
+    fetchChannels,
+    createChannel,
+    updateChannel,
+    deleteChannel,
+    isLoading: channelsLoading,
+    error: channelsError,
+    clearError: clearChannelsError
+  } = useChannelStore()
 
   // Local state for UI
+  const [tabValue, setTabValue] = useState(0)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
   const [userFormMode, setUserFormMode] = useState<'create' | 'edit'>('create')
@@ -58,12 +71,16 @@ const OrganizationDetailPage = () => {
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [userStats, setUserStats] = useState<{ total: number; byRole: Record<string, number> }>({ total: 0, byRole: {} })
 
+  // Channel management state
+  const [selectedChannel, setSelectedChannel] = useState<ChannelWithDetails | null>(null)
+  const [isChannelModalOpen, setIsChannelModalOpen] = useState(false)
+  const [channelFormMode, setChannelFormMode] = useState<'create' | 'edit'>('create')
+  const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false)
+  const [isDeleteChannelDialogOpen, setIsDeleteChannelDialogOpen] = useState(false)
+
   // Check permissions
   const canManageUsers = canAccess(['god', 'admin'])
   const canViewOrganization = canAccess(['god']) || (canAccess(['admin']) && currentUser?.organization_id === organizationId)
-
-  // Get organization and users data
-  const users = organizationId ? getUsersByOrg(organizationId) : []
 
   useEffect(() => {
     if (!organizationId) {
@@ -101,7 +118,13 @@ const OrganizationDetailPage = () => {
       fetchUsersByOrg(organizationId)
       loadUserStats()
     }
-  }, [organizationId, canViewOrganization, canManageUsers, organizations, fetchOrganization, fetchUsersByOrg, navigate])
+
+    // Fetch channels
+    if (canManageUsers) {
+      fetchChannels(organizationId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, canViewOrganization, canManageUsers, organizations, fetchOrganization, fetchUsersByOrg, fetchChannels, navigate])
 
   const loadUserStats = async () => {
     if (!organizationId) return
@@ -127,17 +150,6 @@ const OrganizationDetailPage = () => {
     setIsUserModalOpen(true)
   }
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!organizationId || !confirm('Are you sure you want to delete this user?')) return
-    
-    try {
-      await deleteUser(userId, organizationId)
-      setSuccessMessage('User deleted successfully')
-      await loadUserStats()
-    } catch (error) {
-      // Error handled by store
-    }
-  }
 
   const handleSaveUser = async (userData: UserCreateForm | UserUpdateForm) => {
     if (!organizationId) return
@@ -171,20 +183,10 @@ const OrganizationDetailPage = () => {
       setIsUserModalOpen(false)
       setSelectedUser(null)
       await loadUserStats()
-    } catch (error) {
+    } catch {
       // Error handled by store
     } finally {
       setIsSubmitting(false)
-    }
-  }
-
-  const handleChangeUserRole = async (userId: string, newRole: string) => {
-    try {
-      await updateUser(userId, { role: newRole })
-      setSuccessMessage('User role updated successfully')
-      await loadUserStats()
-    } catch (error) {
-      // Error handled by store
     }
   }
 
@@ -196,6 +198,95 @@ const OrganizationDetailPage = () => {
 
   const handleSuccessClose = () => {
     setSuccessMessage(null)
+  }
+
+  // Tab management
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue)
+  }
+
+  // Channel management handlers
+  const handleCreateChannel = () => {
+    setSelectedChannel(null)
+    setChannelFormMode('create')
+    setIsChannelModalOpen(true)
+  }
+
+  const handleEditChannel = (channel: ChannelWithDetails) => {
+    setSelectedChannel(channel)
+    setChannelFormMode('edit')
+    setIsChannelModalOpen(true)
+  }
+
+  const handleDeleteChannel = (channel: ChannelWithDetails) => {
+    setSelectedChannel(channel)
+    setIsDeleteChannelDialogOpen(true)
+  }
+
+  const handleManageMembers = (channel: ChannelWithDetails) => {
+    setSelectedChannel(channel)
+    setIsMemberDialogOpen(true)
+  }
+
+  const handleSaveChannel = async (channelData: ChannelCreateForm | ChannelUpdateForm) => {
+    console.log('🔵 OrganizationDetailPage: handleSaveChannel called', { channelData, organizationId, currentUser: currentUser?.id })
+    
+    if (!organizationId || !currentUser) {
+      console.error('🔴 OrganizationDetailPage: Missing organizationId or currentUser', { organizationId, currentUser })
+      return
+    }
+    
+    setIsSubmitting(true)
+    try {
+      if (channelFormMode === 'create') {
+        console.log('🟡 OrganizationDetailPage: Creating channel')
+        const createData = channelData as ChannelCreateForm
+        await createChannel(createData, organizationId, currentUser.id)
+        setSuccessMessage('Channel created successfully')
+      } else if (selectedChannel) {
+        console.log('🟡 OrganizationDetailPage: Updating channel')
+        const updateData = channelData as ChannelUpdateForm
+        await updateChannel(selectedChannel.id, updateData)
+        setSuccessMessage('Channel updated successfully')
+      }
+      
+      setIsChannelModalOpen(false)
+      setSelectedChannel(null)
+    } catch (error) {
+      console.error('🔴 OrganizationDetailPage: Error in handleSaveChannel', error)
+      // Error handled by store
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleConfirmDeleteChannel = async () => {
+    if (!selectedChannel) return
+    
+    try {
+      await deleteChannel(selectedChannel.id)
+      setSuccessMessage('Channel deleted successfully')
+      setIsDeleteChannelDialogOpen(false)
+      setSelectedChannel(null)
+    } catch {
+      // Error handled by store
+    }
+  }
+
+  const handleChannelModalClose = () => {
+    setIsChannelModalOpen(false)
+    setSelectedChannel(null)
+    clearChannelsError()
+  }
+
+  const handleMemberDialogClose = () => {
+    setIsMemberDialogOpen(false)
+    setSelectedChannel(null)
+  }
+
+  const handleDeleteChannelDialogClose = () => {
+    setIsDeleteChannelDialogOpen(false)
+    setSelectedChannel(null)
   }
 
   if (!canViewOrganization) {
@@ -252,13 +343,16 @@ const OrganizationDetailPage = () => {
       </Box>
 
       {/* Error Display */}
-      {usersError && (
+      {(usersError || channelsError) && (
         <Alert 
           severity="error" 
-          onClose={clearUsersError}
+          onClose={() => {
+            clearUsersError()
+            clearChannelsError()
+          }}
           sx={{ mb: 3 }}
         >
-          {usersError}
+          {usersError || channelsError}
         </Alert>
       )}
 
@@ -312,13 +406,44 @@ const OrganizationDetailPage = () => {
         </Grid>
       </Grid>
 
-      {/* User Management Section */}
+      {/* Management Tabs */}
       {canManageUsers && organizationId && (
-        <UserManagementTable
-          organizationId={organizationId}
-          onCreateUser={handleCreateUser}
-          onEditUser={handleEditUser}
-        />
+        <Box>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs value={tabValue} onChange={handleTabChange}>
+              <Tab 
+                icon={<PeopleIcon />} 
+                label={`Users (${userStats.total})`} 
+                iconPosition="start"
+              />
+              <Tab 
+                icon={<ChannelIcon />} 
+                label={`Channels (${channels.length})`} 
+                iconPosition="start"
+              />
+            </Tabs>
+          </Box>
+
+          {/* Users Tab */}
+          {tabValue === 0 && (
+            <UserManagementTable
+              organizationId={organizationId}
+              onCreateUser={handleCreateUser}
+              onEditUser={handleEditUser}
+            />
+          )}
+
+          {/* Channels Tab */}
+          {tabValue === 1 && (
+            <ChannelList
+              organizationId={organizationId}
+              onCreateClick={handleCreateChannel}
+              onEditClick={handleEditChannel}
+              onDeleteClick={handleDeleteChannel}
+              onManageMembersClick={handleManageMembers}
+            />
+          )}
+        </Box>
       )}
 
       {/* User Form Modal */}
@@ -331,6 +456,40 @@ const OrganizationDetailPage = () => {
           organizationId={organizationId}
           isSubmitting={isSubmitting}
           error={usersError}
+        />
+      )}
+
+      {/* Channel Form Modal */}
+      {organizationId && (
+        <ChannelForm
+          open={isChannelModalOpen}
+          onClose={handleChannelModalClose}
+          onSubmit={handleSaveChannel}
+          channel={selectedChannel}
+          isSubmitting={isSubmitting}
+          error={channelsError}
+        />
+      )}
+
+      {/* Member Management Dialog */}
+      {selectedChannel && organizationId && (
+        <MemberManagementDialog
+          open={isMemberDialogOpen}
+          onClose={handleMemberDialogClose}
+          channel={selectedChannel}
+          organizationId={organizationId}
+        />
+      )}
+
+      {/* Delete Channel Dialog */}
+      {selectedChannel && (
+        <DeleteChannelDialog
+          open={isDeleteChannelDialogOpen}
+          onClose={handleDeleteChannelDialogClose}
+          onConfirm={handleConfirmDeleteChannel}
+          channel={selectedChannel}
+          isDeleting={channelsLoading}
+          error={channelsError}
         />
       )}
 

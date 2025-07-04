@@ -21,13 +21,13 @@ export const INTEGRATION_TEST_CONFIG = {
       email: 'purajan.rk@gmail.com',
       password: 'Citrix123#'
     },
-    user: {
+    regularUser: {
       id: 'ce4d28ab-59cf-4e6e-bf2e-516245daf01a', 
       role: 'user',
       email: 'testuser@test.com',
       password: 'Citrix123#'
     },
-    client: {
+    clientUser: {
       id: '69f07116-fd93-4f63-b866-42368fad7f84',
       role: 'client', 
       email: 'testclient@test.com',

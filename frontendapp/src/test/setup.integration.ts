@@ -3,7 +3,7 @@ import { supabase } from '@/services/supabase'
 import { INTEGRATION_TEST_CONFIG, validateTestConfig } from './fixtures/integrationTestConfig'
 
 // Authentication helpers for integration tests
-export const authenticateTestUser = async (userType: 'admin' | 'user' | 'client' = 'admin') => {
+export const authenticateTestUser = async (userType: 'admin' | 'regularUser' | 'clientUser' = 'admin') => {
   try {
     const userConfig = INTEGRATION_TEST_CONFIG.users[userType]
     console.log(`🔐 Authenticating test user: ${userConfig.email}`)

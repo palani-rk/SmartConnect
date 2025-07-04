@@ -2,5 +2,5 @@
 export * from './ui'
 export * from './layout'
 export * from './messaging'
-export * from './channels'
+export * from '../features/channel_mgmt/components'
 export * from './users'

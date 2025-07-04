@@ -8,26 +8,20 @@ Frontend: React + TypeScript + MUI + Zustand + Zod + Vitest
 Tracking: GitHub Issues + Execution Plans Folder
 
 ## Folder Structure:
+
+All new feature implementation will follow the featues approach - all files in a common folder.
 ```
-/backend/supabase/
-├── migrations/              
-├── functions/             
-├── integration_tests/
-
-
 /frontendapp/src/
-├── components/           # Reusable UI components
-│   ├── ui/              # Base UI components (Button, Input, etc.)
-│   ├── layout/          # Layout components (Header, Sidebar, etc.)
-│   ├── messaging/       # Message-related components
-│   ├── channels/        # Channel management components
-│   └── users/           # User management components
-├── pages/               # Route components
-│   ├── auth/           # Authentication pages
-│   ├── dashboard/      # Main dashboard
-│   ├── admin/          # Admin panels
-│   └── god/            # God user interface
-├── hooks/              # Custom React hooks
+features/
+├── channel_mgmt/              # Existing
+└── messaging/                 # New messaging feature
+    ├── components/            # Message components
+    ├── hooks/                 # Messaging hooks
+    ├── services/              # Message API services
+    ├── stores/                # Message state management
+    ├── types/                 # Message type definitions
+    └── utils/                 # Message utilities
+    └── __tests__/              # Integration tests
 ├── stores/             # Zustand stores
 ├── services/           # API services and utilities
 ├── types/              # TypeScript type definitions

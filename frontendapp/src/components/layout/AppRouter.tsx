@@ -21,9 +21,6 @@ const OrganizationDetailPage = lazy(() => import('@/pages/organizations/Organiza
 // User pages
 const UsersPage = lazy(() => import('@/pages/users/UsersPage'))
 
-// Channel pages
-const ChannelsPage = lazy(() => import('@/pages/channels/ChannelsPage'))
-
 // Message pages
 const MessagesPage = lazy(() => import('@/pages/messages/MessagesPage'))
 
@@ -32,6 +29,9 @@ const IntegrationsPage = lazy(() => import('@/pages/integrations/IntegrationsPag
 
 // Profile pages
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'))
+
+// Channel pages
+const ChannelsPage = lazy(() => import('@/pages/channels/ChannelsPage'))
 
 // Loading component
 const PageLoading = () => (
@@ -86,12 +86,14 @@ export const AppRouter = () => {
               </ProtectedRoute>
             } />
 
-            {/* Channels - God, Admin, and User roles */}
+            {/* Channels - Admin and God users only */}
             <Route path="channels" element={
-              <ProtectedRoute requiredRoles={[USER_ROLES.GOD, USER_ROLES.ADMIN, USER_ROLES.USER]}>
+              <ProtectedRoute requiredRoles={[USER_ROLES.GOD, USER_ROLES.ADMIN]}>
                 <ChannelsPage />
               </ProtectedRoute>
             } />
+
+            {/* Channels are now managed within Organization Detail pages */}
 
             {/* Messages - All authenticated users */}
             <Route path="messages" element={<MessagesPage />} />
