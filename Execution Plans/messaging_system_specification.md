@@ -284,7 +284,6 @@ interface MessageReaction {
 ### Phase 1: Basic Messaging (Week 1-2)
 - Text messaging in channels
 - Real-time message sync
-- Basic user presence
 - Message history with pagination
 
 ### Phase 2: Multi-Modal Support (Week 3)

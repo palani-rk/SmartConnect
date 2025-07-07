@@ -9,7 +9,7 @@ Tracking: GitHub Issues + Execution Plans Folder
 
 ## Folder Structure:
 
-All new feature implementation will follow the featues approach - all files in a common folder.
+All new feature implementation will follow the featues approach - all feature files in a common folder.
 ```
 /frontendapp/src/
 features/
@@ -45,6 +45,11 @@ Formulate Clarifying Questions: If requirements are ambiguous, generate a list o
 Define Acceptance Criteria: List the conditions that must be met for the task to be considered complete.
 
 ## 2. Contextual & Architectural Analysis
+Backend Supabase types: Refer to /backend/supabase/supabase.ts
+Supabase functions and migrations: /backend/supabase folder
+
+Frontend Features: /frontendapp/TechnicalDocs/frontend_features.md
+
 Codebase Search: Search the codebase for existing patterns, conventions, and reusable components related to the affected features.
 
 Impact Assessment: Identify all systems to be modified:
@@ -61,6 +66,8 @@ Example: "I will create a new hook useFeature using React Query, as this matches
 Use these rules to decide on implementation details:
 
 ### Backend Logic:
+
+Leverage SupabaseREST capabilities for CRUD
 
 WHEN logic is data-intensive and operates close to the database (e.g., complex joins, data aggregation), THEN implement a Supabase Database Function.
 
@@ -94,4 +101,4 @@ Schema & Type Design: Design any new TypeScript interfaces or Supabase database 
 (Human-in-the-Loop Gate: Present this completed plan as a pre-execution report for optional human review before starting implementation. Store the completed plan in a execution-plans/<feature>.md)
 
 ## 5. Git Sub-tasks creation
-For each task defined in the plan, create a sub-task in github that can be used by coding agents to implement and validate
+For each task defined in the plan, create a sub-task in github (link it to the original GH Issue in: $ARGUMENTS) that can be used by coding agents to implement and validate
