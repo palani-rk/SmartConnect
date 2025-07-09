@@ -259,6 +259,77 @@ describe('Channel Management API Integration Tests', () => {
       expect(error?.code).toBe('42501') // PostgreSQL insufficient privilege
       expect(channel).toBeNull()
     })
+
+    it('should prevent unauthenticated users from accessing channels API', async () => {
+      // Ensure no user is authenticated
+      await signOutTestUser()
+      
+      // Verify no authentication
+      const { data: { user } } = await supabase.auth.getUser()
+      expect(user).toBeNull()
+
+      console.log('🔒 Testing unauthenticated access to channels API...')
+
+      // Test 1: Attempt to create channel without authentication
+      const channelName = generateTestName(BACKEND_TEST_CONFIG.prefixes.channel + 'unauth-')
+      const { data: createData, error: createError } = await supabase
+        .from('channels')
+        .insert({
+          name: channelName,
+          description: 'Unauthorized creation attempt',
+          type: 'public',
+          organization_id: TEST_ORG_ID,
+          created_by: TEST_REGULAR_USER.id
+        })
+        .select()
+        .single()
+
+      // Should fail - unauthenticated users cannot create channels
+      expect(createError).toBeDefined()
+      expect(createData).toBeNull()
+      console.log('✅ Channel creation blocked for unauthenticated users')
+
+      // Test 2: Attempt to read channels without authentication
+      const { data: readData, error: readError } = await supabase
+        .from('channels')
+        .select('*')
+        .eq('organization_id', TEST_ORG_ID)
+        .limit(1)
+
+      // Should fail - unauthenticated users cannot read channels
+      expect(readError).toBeDefined()
+      expect(readData).toBeNull()
+      console.log('✅ Channel reading blocked for unauthenticated users')
+
+      // Test 3: Attempt to update channels without authentication
+      // First get any existing channel ID (this will also fail but we need an ID)
+      const { data: updateData, error: updateError } = await supabase
+        .from('channels')
+        .update({ description: 'Unauthorized update attempt' })
+        .eq('organization_id', TEST_ORG_ID)
+        .select()
+        .limit(1)
+
+      // Should fail - unauthenticated users cannot update channels
+      expect(updateError).toBeDefined()
+      expect(updateData).toBeNull()
+      console.log('✅ Channel updates blocked for unauthenticated users')
+
+      // Test 4: Attempt to delete channels without authentication
+      const { data: deleteData, error: deleteError } = await supabase
+        .from('channels')
+        .delete()
+        .eq('organization_id', TEST_ORG_ID)
+        .select()
+        .limit(1)
+
+      // Should fail - unauthenticated users cannot delete channels
+      expect(deleteError).toBeDefined()
+      expect(deleteData).toBeNull()
+      console.log('✅ Channel deletion blocked for unauthenticated users')
+
+      console.log('🛡️ All unauthenticated access attempts properly blocked')
+    })
   })
 
   describe('Channel Membership Operations', () => {
