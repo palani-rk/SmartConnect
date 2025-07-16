@@ -356,7 +356,7 @@ describe('MessageService Integration Tests', () => {
         },
         expect.any(Function)
       )
-      expect(mockSubscription.subscribe).toHaveBeenCalled()
+      expect(mockSubscription.subscribe).toHaveBeenCalledWith(expect.any(Function))
       expect(typeof unsubscribe).toBe('function')
     })
   })

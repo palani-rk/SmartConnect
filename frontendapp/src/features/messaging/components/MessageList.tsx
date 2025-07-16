@@ -44,7 +44,7 @@ const MessageRow: React.FC<MessageRowProps> = ({ index, style, data }) => {
   const { messages, currentUserId, onEdit, onDelete, onReply, onTogglePin, onRetry } = data
   const message = messages[index]
   
-  if (!message) return null
+  if (!message || !message.author) return null
 
   const isOwnMessage = message.author.id === currentUserId
   
@@ -80,6 +80,7 @@ const MessageList: React.FC<MessageListProps> = ({
     hasMore,
     error,
     connectionStatus,
+    shouldAutoScroll,
     loadMessages,
     loadMoreMessages,
     sendMessage,
@@ -88,6 +89,7 @@ const MessageList: React.FC<MessageListProps> = ({
     subscribeToChannel,
     refreshMessages,
     clearError,
+    setShouldAutoScroll,
   } = useMessageStore()
 
   const listRef = useRef<List>(null)
@@ -115,10 +117,19 @@ const MessageList: React.FC<MessageListProps> = ({
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messages.length > 0 && isAtBottom) {
-      listRef.current?.scrollToItem(0, 'end')
+    if (messages.length > 0) {
+      const shouldScroll = isAtBottom || shouldAutoScroll
+      
+      if (shouldScroll) {
+        listRef.current?.scrollToItem(0, 'end')
+        
+        // Reset auto-scroll flag after scrolling
+        if (shouldAutoScroll) {
+          setShouldAutoScroll(false)
+        }
+      }
     }
-  }, [messages.length, isAtBottom])
+  }, [messages.length, isAtBottom, shouldAutoScroll, setShouldAutoScroll])
 
   // Handle scroll to detect if user is at bottom
   const handleScroll = useCallback(({

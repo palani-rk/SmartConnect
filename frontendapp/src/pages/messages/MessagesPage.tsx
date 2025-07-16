@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Box, 
   Typography, 
@@ -8,21 +8,18 @@ import {
   ListItem, 
   ListItemText, 
   ListItemButton,
-  Divider,
   Alert,
   CircularProgress,
   Chip
 } from '@mui/material'
 import { useChannelStore } from '@/features/channel_mgmt/stores/channelStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useOrganizationStore } from '@/stores/organizationStore'
 import { MessageList, MessageInput } from '@/features/messaging/components'
 import { useMessageList } from '@/features/messaging/hooks'
 import type { ChannelWithDetails } from '@/features/channel_mgmt/types/channel'
 
 const MessagesPage = () => {
   const { user } = useAuthStore()
-  const { selectedOrganization } = useOrganizationStore()
   const { 
     channels, 
     isLoading: channelsLoading, 
@@ -32,12 +29,15 @@ const MessagesPage = () => {
   
   const [selectedChannel, setSelectedChannel] = useState<ChannelWithDetails | null>(null)
   
+  // Get organization ID from authenticated user
+  const organizationId = user?.organization_id
+  
   // Load channels when component mounts
   useEffect(() => {
-    if (selectedOrganization?.id) {
-      fetchChannels(selectedOrganization.id)
+    if (organizationId) {
+      fetchChannels(organizationId)
     }
-  }, [selectedOrganization?.id, fetchChannels])
+  }, [organizationId, fetchChannels])
 
   // Auto-select first channel if none selected
   useEffect(() => {
@@ -48,27 +48,15 @@ const MessagesPage = () => {
 
   // Use message list hook for the selected channel
   const {
-    messages,
-    isLoading: messagesLoading,
     isSending,
-    hasMore,
     error: messagesError,
     connectionStatus,
     sendMessage,
     clearError,
-    subscribeToMessages,
   } = useMessageList({
     channelId: selectedChannel?.id || '',
     autoLoad: true,
   })
-
-  // Subscribe to real-time messages
-  useEffect(() => {
-    if (selectedChannel?.id) {
-      const unsubscribe = subscribeToMessages()
-      return unsubscribe || undefined
-    }
-  }, [selectedChannel?.id, subscribeToMessages])
 
   const handleChannelSelect = (channel: ChannelWithDetails) => {
     setSelectedChannel(channel)
@@ -97,14 +85,14 @@ const MessagesPage = () => {
     )
   }
 
-  if (!selectedOrganization) {
+  if (!organizationId) {
     return (
       <Box>
         <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'grey.900', mb: 3 }}>
           Messages
         </Typography>
-        <Alert severity="info">
-          Please select an organization to view messages
+        <Alert severity="warning">
+          No organization found. Please contact your administrator.
         </Alert>
       </Box>
     )
@@ -118,7 +106,7 @@ const MessagesPage = () => {
       
       <Grid container spacing={2} sx={{ height: 'calc(100vh - 200px)' }}>
         {/* Channel List */}
-        <Grid item xs={12} md={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Paper elevation={1} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
               <Typography variant="h6" fontWeight="600">
@@ -174,7 +162,7 @@ const MessagesPage = () => {
         </Grid>
 
         {/* Message Interface */}
-        <Grid item xs={12} md={9}>
+        <Grid size={{ xs: 12, md: 9 }}>
           <Paper elevation={1} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {selectedChannel ? (
               <>

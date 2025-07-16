@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { MessageService } from '../services/messageService'
+import { useAuthStore } from '@/stores/authStore'
 import type { 
   MessageWithDetails,
   MessageFormData,
@@ -19,6 +20,7 @@ interface MessageState {
   hasMore: boolean
   error: string | null
   connectionStatus: ConnectionStatus
+  shouldAutoScroll: boolean
   nextCursor?: string
 
   // Actions
@@ -26,6 +28,7 @@ interface MessageState {
   setError: (error: string | null) => void
   clearError: () => void
   setConnectionStatus: (status: ConnectionStatus) => void
+  setShouldAutoScroll: (shouldScroll: boolean) => void
 
   // Message operations
   loadMessages: (channelId: string, cursor?: string) => Promise<void>
@@ -60,6 +63,7 @@ export const useMessageStore = create<MessageState>()(
       hasMore: true,
       error: null,
       connectionStatus: 'disconnected',
+      shouldAutoScroll: false,
       nextCursor: undefined,
 
       // Synchronous actions
@@ -74,6 +78,9 @@ export const useMessageStore = create<MessageState>()(
 
       setConnectionStatus: (status) => 
         set({ connectionStatus: status }, false, 'setConnectionStatus'),
+
+      setShouldAutoScroll: (shouldScroll) => 
+        set({ shouldAutoScroll: shouldScroll }, false, 'setShouldAutoScroll'),
 
       // Message operations
       loadMessages: async (channelId: string, cursor?: string) => {
@@ -129,12 +136,18 @@ export const useMessageStore = create<MessageState>()(
         set({ isSending: true, error: null }, false, 'sendMessage:start')
         
         try {
+          // Get current user from auth store
+          const currentUser = useAuthStore.getState().user
+          if (!currentUser) {
+            throw new Error('User not authenticated')
+          }
+
           // Create optimistic message
           const tempId = `temp-${Date.now()}`
           const optimisticMessage: MessageWithDetails = {
             id: tempId,
             channel_id: data.channelId,
-            user_id: 'current-user', // This should come from auth store
+            user_id: currentUser.id,
             content: data.content,
             message_type: data.messageType || 'text',
             metadata: data.metadata || {},
@@ -145,9 +158,9 @@ export const useMessageStore = create<MessageState>()(
             updated_at: new Date().toISOString(),
             deleted_at: null,
             author: {
-              id: 'current-user',
-              email: 'current@user.com', // This should come from auth store
-              role: 'member'
+              id: currentUser.id,
+              email: currentUser.email,
+              role: currentUser.role
             },
             channel: {
               id: data.channelId,
@@ -159,6 +172,9 @@ export const useMessageStore = create<MessageState>()(
 
           // Add optimistic message to UI
           get().addOptimisticMessage(optimisticMessage)
+          
+          // Set auto-scroll flag for user's own message
+          set({ shouldAutoScroll: true }, false, 'sendMessage:autoScroll')
 
           // Send message to server
           const sentMessage = await MessageService.sendMessage(data)
@@ -230,9 +246,16 @@ export const useMessageStore = create<MessageState>()(
       subscribeToChannel: (channelId: string) => {
         console.log('🔔 Subscribing to channel:', channelId)
         
-        return MessageService.subscribeToMessages(channelId, (event) => {
-          get().handleRealtimeMessage(event)
-        })
+        return MessageService.subscribeToMessages(
+          channelId, 
+          (event) => {
+            get().handleRealtimeMessage(event)
+          },
+          (status) => {
+            console.log('🔔 Connection status changed to:', status)
+            get().setConnectionStatus(status)
+          }
+        )
       },
 
       handleRealtimeMessage: (event: MessageEvent) => {
@@ -243,26 +266,50 @@ export const useMessageStore = create<MessageState>()(
         // Only handle events for the currently selected channel
         if (event.new.channel_id !== selectedChannel) return
 
+        // Get current user ID for deduplication
+        const currentUser = useAuthStore.getState().user
+        const currentUserId = currentUser?.id
+
         switch (event.eventType) {
           case 'INSERT':
-            // Don't add if it's our own optimistic message
             set((state) => {
-              const existingOptimistic = state.messages.find(msg => 
-                msg.content === event.new.content && 
-                msg.isOptimistic
-              )
+              const isOwnMessage = event.new.user_id === currentUserId
               
-              if (existingOptimistic) {
-                // Update optimistic message with real data
+              if (isOwnMessage) {
+                // Check for optimistic message to replace
+                const optimisticIndex = state.messages.findIndex(msg => 
+                  msg.isOptimistic && msg.content === event.new.content
+                )
+                
+                if (optimisticIndex >= 0) {
+                  // Replace optimistic with real message
+                  console.log('🔄 Replacing optimistic message with real message')
+                  return {
+                    messages: state.messages.map((msg, index) => 
+                      index === optimisticIndex 
+                        ? { ...event.new as MessageWithDetails, status: 'delivered' }
+                        : msg
+                    ),
+                    shouldAutoScroll: true // Auto-scroll for user's own message
+                  }
+                }
+                
+                // Check if message already exists (prevent duplicates)
+                const existingMessage = state.messages.find(msg => msg.id === event.new.id)
+                if (existingMessage) {
+                  console.log('🚫 Message already exists, skipping duplicate')
+                  return state // Don't add duplicate
+                }
+                
+                // Edge case: user's message without optimistic update
+                console.log('⚠️ User message without optimistic update')
                 return {
-                  messages: state.messages.map(msg => 
-                    msg.id === existingOptimistic.id 
-                      ? { ...event.new as MessageWithDetails, status: 'delivered' }
-                      : msg
-                  )
+                  messages: [event.new as MessageWithDetails, ...state.messages],
+                  shouldAutoScroll: true
                 }
               } else {
                 // Add new message from other users
+                console.log('📥 Adding message from other user')
                 return {
                   messages: [event.new as MessageWithDetails, ...state.messages]
                 }
@@ -326,6 +373,7 @@ export const useMessageStore = create<MessageState>()(
           hasMore: true,
           error: null,
           connectionStatus: 'disconnected',
+          shouldAutoScroll: false,
           nextCursor: undefined
         }, false, 'reset')
     }),

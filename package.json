@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@playwright/test": "^1.53.2",
     "retina-ui-test-mcp": "file:../RetinaAI/retina-ui-test-mcp"
   }
 }

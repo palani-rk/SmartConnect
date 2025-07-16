@@ -215,7 +215,8 @@ export class MessageService {
    */
   static subscribeToMessages(
     channelId: string,
-    callback: (event: MessageEvent) => void
+    callback: (event: MessageEvent) => void,
+    onStatusChange?: (status: 'connected' | 'disconnected' | 'reconnecting') => void
   ): () => void {
     console.log('🔔 MessageService: Subscribing to messages for channel', channelId)
     
@@ -229,23 +230,66 @@ export class MessageService {
           table: 'messages',
           filter: `channel_id=eq.${channelId}`
         },
-        (payload) => {
+        async (payload) => {
           console.log('🔔 MessageService: Real-time message event received', payload)
           
-          const messageEvent: MessageEvent = {
-            eventType: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
-            new: payload.new as Message,
-            old: payload.old as Message
+          let messageEvent: MessageEvent
+          
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            // For INSERT/UPDATE events, fetch the complete message details
+            try {
+              const completeMessage = await MessageService.getMessage(payload.new.id)
+              messageEvent = {
+                eventType: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
+                new: completeMessage as Message,
+                old: payload.old as Message
+              }
+            } catch (error) {
+              console.error('🔴 MessageService: Error fetching complete message for real-time event:', error)
+              // Fallback to raw payload if fetch fails
+              messageEvent = {
+                eventType: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
+                new: payload.new as Message,
+                old: payload.old as Message
+              }
+            }
+          } else {
+            // For DELETE events, use the raw payload
+            messageEvent = {
+              eventType: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
+              new: payload.new as Message,
+              old: payload.old as Message
+            }
           }
 
           callback(messageEvent)
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('🔔 MessageService: Subscription status changed to', status)
+        if (onStatusChange) {
+          // Map Supabase status to our connection status
+          switch (status) {
+            case 'SUBSCRIBED':
+              onStatusChange('connected')
+              break
+            case 'CHANNEL_ERROR':
+            case 'TIMED_OUT':
+            case 'CLOSED':
+              onStatusChange('disconnected')
+              break
+            default:
+              onStatusChange('reconnecting')
+          }
+        }
+      })
 
     // Return unsubscribe function
     return () => {
       console.log('🔕 MessageService: Unsubscribing from messages for channel', channelId)
+      if (onStatusChange) {
+        onStatusChange('disconnected')
+      }
       subscription.unsubscribe()
     }
   }

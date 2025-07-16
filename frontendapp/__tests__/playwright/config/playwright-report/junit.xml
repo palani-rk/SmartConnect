@@ -1,0 +1,10 @@
+<testsuites id="" name="" tests="3" failures="0" skipped="0" errors="0" time="17.235674999999997">
+<testsuite name="messaging/specs/simple-navigation.spec.ts" timestamp="2025-07-09T08:23:40.774Z" hostname="chromium" tests="3" failures="0" skipped="0" time="13.146" errors="0">
+<testcase name="Simple Navigation Tests › should load the home page" classname="messaging/specs/simple-navigation.spec.ts" time="4.739">
+</testcase>
+<testcase name="Simple Navigation Tests › should display login page" classname="messaging/specs/simple-navigation.spec.ts" time="3.538">
+</testcase>
+<testcase name="Simple Navigation Tests › should navigate to messages and redirect to login" classname="messaging/specs/simple-navigation.spec.ts" time="4.869">
+</testcase>
+</testsuite>
+</testsuites>

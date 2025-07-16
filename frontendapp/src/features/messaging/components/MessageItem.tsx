@@ -370,23 +370,21 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </MenuItem>
 
         {/* Own message actions */}
-        {isOwnMessage && (
-          <>
-            <Divider />
-            <MenuItem onClick={handleEditClick}>
-              <ListItemIcon>
-                <EditIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Edit</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
-              <ListItemIcon>
-                <DeleteIcon fontSize="small" color="error" />
-              </ListItemIcon>
-              <ListItemText>Delete</ListItemText>
-            </MenuItem>
-          </>
-        )}
+        {isOwnMessage && [
+          <Divider key="divider" />,
+          <MenuItem key="edit" onClick={handleEditClick}>
+            <ListItemIcon>
+              <EditIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Edit</ListItemText>
+          </MenuItem>,
+          <MenuItem key="delete" onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText>Delete</ListItemText>
+          </MenuItem>
+        ]}
       </Menu>
     </Box>
   )

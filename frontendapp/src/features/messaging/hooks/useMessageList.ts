@@ -26,8 +26,6 @@ interface UseMessageListReturn {
   refreshMessages: () => Promise<void>
   clearError: () => void
   
-  // Real-time
-  subscribeToMessages: () => (() => void) | null
 }
 
 export const useMessageList = ({
@@ -151,13 +149,6 @@ export const useMessageList = ({
     storeClearError()
   }, [storeClearError])
 
-  // Subscribe to real-time messages
-  const subscribeToMessages = useCallback(() => {
-    if (!channelId) return null
-    
-    console.log('🔔 useMessageList: Subscribing to messages for channel', channelId)
-    return subscribeToChannel(channelId)
-  }, [channelId, subscribeToChannel])
 
   return {
     messages,
@@ -175,8 +166,5 @@ export const useMessageList = ({
     deleteMessage,
     refreshMessages,
     clearError,
-    
-    // Real-time
-    subscribeToMessages,
   }
 }
