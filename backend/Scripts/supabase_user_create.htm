@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartConnect Signup</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Create New User</h2>
+    <div id="signupForm">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" required>
+        </div>
+        <div class="form-group">
+            <label for="orgId">Organization ID:</label>
+            <input type="text" id="orgId" required>
+        </div>
+        <div class="form-group">
+            <label for="role">Role:</label>
+            <select id="role" required>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+                <option value="client">Client</option>
+                <option value="god">God</option>
+            </select>
+        </div>
+        <button onclick="signUp()">Sign Up</button>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://axmikjtbiddtmdepaqhr.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4bWlranRiaWRkdG1kZXBhcWhyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjY3OTc0NCwiZXhwIjoyMDYyMjU1NzQ0fQ.acRPS45-VOSRbM0oX-cwyksTn9HVHMcxMG5XKu9W5Q8'
+        const { createClient } = supabase
+        const supabaseClient = createClient(supabaseUrl, supabaseKey)
+
+        async function signUp() {
+            const email = document.getElementById('email').value
+            const password = document.getElementById('password').value
+            const orgId = document.getElementById('orgId').value
+            const role = document.getElementById('role').value
+            const errorDiv = document.getElementById('error')
+
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            organization_id: orgId,
+                            role: role
+                        }
+                    }
+                })
+
+                if (error) throw error
+
+                alert('User created successfully!')
+            } catch (error) {
+                errorDiv.textContent = error.message
+            }
+        }
+    </script></body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "smartconnect-backend",
+  "version": "1.0.0",
+  "description": "Backend integration tests for SmartConnect Supabase",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest watch --config vitest.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:watch": "vitest watch --config vitest.integration.config.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^17.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "supabase": "^2.30.4",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  }
+}

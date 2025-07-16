@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "/home/pal/.nvm/versions/node/v22.16.0/bin/npx",
+      "args": ["@playwright/mcp"],
+      "cwd": "/mnt/c/MoonShot/SmartConnect_Supabase",
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "./browsers",
+        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "false"
+      }
+    }
+  }
+}
