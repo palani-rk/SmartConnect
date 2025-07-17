@@ -148,6 +148,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 -- Check if message is in accessible channel
+-- Drop existing function to avoid parameter name conflicts
+DROP FUNCTION IF EXISTS can_access_message(uuid);
+
 CREATE OR REPLACE FUNCTION can_access_message(message_uuid UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
